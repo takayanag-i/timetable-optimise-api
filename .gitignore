@@ -1,8 +1,12 @@
-# KJ
-tests/resources/sample01/
-tests/resources/sample02/
-tests/resources/sample03/
-tests/resources/sample04/
+# system
+~$*
+.DS_Store
+
+# test resources
+tests/resources/
+
+# cache
+*__pycache__/
 
 # venv
 .venv/
