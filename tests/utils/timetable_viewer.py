@@ -67,7 +67,7 @@ def display_result_all_teachers(
     timetable_df = pd.DataFrame(index=instrutors, columns=periods)
     for entry in entries:
         for detail in annual_data.course_details_dict[entry["course"]]:
-            timetable_df.at[detail.instructor, f'{entry["day"]} {entry["period"]}'] = entry["course"]
+            timetable_df.at[detail.instructor_id, f'{entry["day"]} {entry["period"]}'] = entry["course"]
 
     return timetable_df
 

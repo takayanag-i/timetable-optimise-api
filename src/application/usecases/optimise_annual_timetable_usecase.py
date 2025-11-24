@@ -4,7 +4,7 @@ from application.factories.annual_timetable_result_factory import create_timetab
 from application.factories.constraint_definitions_factory import create_constraint_definitions
 from application.models.dto import (
     AnnualTimetableResultDto, TimetableEntryDto,
-    OptimiseAnnualTimetableDto, V1ConstraintViolationDto
+    OptimiseAnnualTimetableDto, ConstraintViolationDto
 )
 from domain.services.annual_lp_service import AnnualLpService
 from domain.vo.annual_data import AnnualDataVo
@@ -40,7 +40,7 @@ class OptimiseAnnualTimetableUsecase:
         AnnualLpService.solve(model)
 
         entries: List[TimetableEntryDto] = create_timetable_entries(model)
-        violations: List[V1ConstraintViolationDto] = create_constraint_violations(model)
+        violations: List[ConstraintViolationDto] = create_constraint_violations(model)
 
         return AnnualTimetableResultDto(
             entries=entries,

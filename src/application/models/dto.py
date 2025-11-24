@@ -4,7 +4,7 @@ Application DTOs (Data Transfer Objects)
 このファイルには、アプリケーション層で使用される全てのDTOクラスが定義されています。
 """
 
-from typing import Generic, List, Optional, Tuple, TypeVar
+from typing import Any, Generic, List, Optional, Tuple, TypeVar
 from pydantic import BaseModel, ConfigDict, Field
 
 from common.constants import ViolationCode
@@ -216,7 +216,9 @@ class ConstraintParameterDto(BaseModel):
 
 class ConstraintDefinitionDto(BaseModel):
     """制約定義DTO"""
-    constraint_definition_code: str = Field(..., alias="constraintDefinitionCode", description="制約定義コード", examples=["C001"])
+    constraint_definition_code: str = Field(
+        ..., alias="constraintDefinitionCode", description="制約定義コード", examples=["C001"]
+    )
     soft_flag: bool = Field(..., alias="softFlag", description="ソフト制約かどうか")
     penalty_weight: Optional[int] = Field(None, alias="penaltyWeight", description="ペナルティ重み", examples=[10])
     parameters: Optional[List[ConstraintParameterDto]] = Field(default_factory=list, description="制約パラメータリスト")
@@ -245,9 +247,19 @@ class V1ConstraintViolationDto(ConstraintViolationDto[str]):
     violation_code: str = ViolationCode.V1.value
 
 
+class V2ConstraintViolationDto(ConstraintViolationDto[str]):
+    """連続曜日制約違反DTO"""
+    violation_code: str = ViolationCode.V2.value
+
+
 class V3ConstraintViolationDto(ConstraintViolationDto[Tuple[str, str]]):
-    """教員コマ数（１日）制約違反変数"""
+    """教員コマ数（１日）制約違反DTO"""
     violation_code: str = ViolationCode.V3.value
+
+
+class V4ConstraintViolationDto(ConstraintViolationDto[Tuple[str, int, str]]):
+    """教員連続コマ数制約違反DTO"""
+    violation_code: str = ViolationCode.V4.value
 
 
 # ===== Timetable DTOs =====
@@ -274,7 +286,7 @@ class TimetableEntryDto(BaseModel):
 class AnnualTimetableResultDto(BaseModel):
     """年次時間割編成結果DTO"""
     entries: List[TimetableEntryDto] = Field(..., description="時間割エントリリスト")
-    violations: List[ConstraintViolationDto] = Field(..., description="制約違反リスト")
+    violations: List[ConstraintViolationDto[Any]] = Field(..., description="制約違反リスト")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -306,7 +318,9 @@ class OptimiseAnnualTimetableDto(BaseModel):
     """年次時間割編成DTO"""
     ttid: str = Field(..., description="時間割ID（TTID）", examples=["550e8400-e29b-41d4-a716-446655440000"])
     annual_data: AnnualDataDto = Field(..., alias="annualData", description="年次データ")
-    constraint_definitions: List[ConstraintDefinitionDto] = Field(..., alias="constraintDefinitions", description="制約定義リスト")
+    constraint_definitions: List[ConstraintDefinitionDto] = Field(
+        ..., alias="constraintDefinitions", description="制約定義リスト"
+    )
 
     model_config = ConfigDict(
         populate_by_name=True,

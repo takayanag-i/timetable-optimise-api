@@ -23,7 +23,11 @@
     "--ignore=E501" // E501:行長(自動改行防止させないため)
   ],
   // path
-  "python.analysis.extraPaths": [
+  "python.autoComplete.extraPaths": [
+    "./src/",
+    "./tests/"
+  ],
+  "cursorpyright.analysis.extraPaths": [
     "./src/",
     "./tests/"
   ],
