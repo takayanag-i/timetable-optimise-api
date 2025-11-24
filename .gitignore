@@ -1,0 +1,19 @@
+# KJ
+tests/resources/sample01/
+tests/resources/sample02/
+tests/resources/sample03/
+tests/resources/sample04/
+
+# venv
+.venv/
+
+# pytest
+.coverage
+coverage.xml
+.pytest_cache/
+
+# env
+.env
+
+# jupyter notebook
+*.ipynb
