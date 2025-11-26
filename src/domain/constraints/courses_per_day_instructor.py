@@ -4,7 +4,7 @@ from domain.models.annual_lp_model import AnnualLpModel
 import pulp
 
 
-class TeacherDailyLessonsConstraint(ConstraintApplierBase):
+class CoursesPerDayInstructorConstraint(ConstraintApplierBase):
     """教員の1日あたりのコマ数制約
 
     教員の1日あたりの担当コマ数が、設定した上限値以下である。
@@ -44,3 +44,4 @@ class TeacherDailyLessonsConstraint(ConstraintApplierBase):
         ), "V3"
 
         return model
+

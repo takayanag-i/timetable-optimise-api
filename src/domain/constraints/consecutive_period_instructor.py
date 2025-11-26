@@ -4,7 +4,7 @@ from domain.models.annual_lp_model import AnnualLpModel
 import pulp
 
 
-class TeacherConsecutiveLessonsConstraint(ConstraintApplierBase):
+class ConsecutivePeriodInstructorConstraint(ConstraintApplierBase):
     """教員の連続コマ数制約
 
     教員が連続して授業を担当するコマ数が、設定した上限値以下である。

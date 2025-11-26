@@ -79,15 +79,15 @@ class AnnualLpModel:
             for c in self.data.C
         }
 
-        # self.v3 = {
-        #     (d, i): pulp.LpVariable(name=f"v^3_{d}_{i}", cat=pulp.LpBinary)
-        #     for d in self.data.D
-        #     for i in self.data.I
-        # }
+        self.v3 = {
+            (d, i): pulp.LpVariable(name=f"v^3_{d}_{i}", cat=pulp.LpBinary)
+            for d in self.data.D
+            for i in self.data.I
+        }
 
-        # self.v4 = {
-        #     (d, p, i): pulp.LpVariable(name=f"v^4_{d}_{p}_{i}", cat=pulp.LpBinary)
-        #     for d in self.data.D
-        #     for p in self.data.P
-        #     for i in self.data.I
-        # }
+        self.v4 = {
+            (d, p, i): pulp.LpVariable(name=f"v^4_{d}_{p}_{i}", cat=pulp.LpBinary)
+            for d in self.data.D
+            for p in self.data.P
+            for i in self.data.I
+        }
