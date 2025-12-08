@@ -1,6 +1,6 @@
-# Cloud Run デプロイ手順（GitHub直接デプロイ）
+# Cloud Run デプロイ手順（Cloud Buildトリガー）
 
-このドキュメントでは、GitHubから直接Google Cloud Runにデプロイする手順を説明します。
+このドキュメントでは、GitHubからCloud Buildトリガーを使用してGoogle Cloud Runにデプロイする手順を説明します。
 
 ## 前提条件
 
@@ -28,6 +28,8 @@ gcloud auth application-default login
 ### 2. 必要なAPIの有効化
 
 ```bash
+PROJECT_ID="your-project-id"
+
 # Cloud Run API
 gcloud services enable run.googleapis.com
 
@@ -58,6 +60,8 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ### 4. 環境変数の設定（Secret Managerを使用 - 推奨）
 
 ```bash
+PROJECT_ID="your-project-id"
+
 # Secretを作成
 echo -n "your-wlsaccessid" | gcloud secrets create wlsaccessid --data-file=-
 echo -n "your-wlssecret" | gcloud secrets create wlssecret --data-file=-
@@ -76,93 +80,74 @@ gcloud secrets add-iam-policy-binding licenseid \
     --role="roles/secretmanager.secretAccessor"
 ```
 
-## デプロイ方法
+## Cloud Buildトリガーの設定
 
-### 方法1: GitHub Actionsを使用（推奨）
-
-GitHub Actionsで自動デプロイする方法です。最もシンプルで推奨される方法です。
-
-#### セットアップ
-
-1. **サービスアカウントの作成と権限付与**
+### 方法1: gcloudコマンドで設定
 
 ```bash
 PROJECT_ID="your-project-id"
+REPO_NAME="your-repo-name"
+REPO_OWNER="your-github-username"
+REGION="asia-northeast1"
 
-# サービスアカウントを作成
-gcloud iam service-accounts create github-actions \
-    --display-name="GitHub Actions Service Account"
-
-# 権限を付与
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:github-actions@${PROJECT_ID}.iam.gserviceaccount.com" \
-    --role="roles/run.admin"
-
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:github-actions@${PROJECT_ID}.iam.gserviceaccount.com" \
-    --role="roles/iam.serviceAccountUser"
-
-# JSONキーを生成
-gcloud iam service-accounts keys create key.json \
-    --iam-account=github-actions@${PROJECT_ID}.iam.gserviceaccount.com
-```
-
-2. **GitHub Secretsの設定**
-
-GitHubリポジトリの Settings → Secrets and variables → Actions で以下を設定：
-
-- `GCP_PROJECT_ID`: Google CloudプロジェクトID
-- `GCP_SA_KEY`: 上記で作成したkey.jsonの内容
-- `WLSACCESSID`: GurobiライセンスID
-- `WLSSECRET`: Gurobiライセンスシークレット
-- `LICENSEID`: GurobiライセンスID
-
-3. **ワークフローファイルの確認**
-
-`.github/workflows/deploy-cloud-run.yml` が既に作成されています。必要に応じて環境変数を調整してください。
-
-#### デプロイの実行
-
-mainブランチにプッシュすると自動的にデプロイが開始されます：
-
-```bash
-git add .
-git commit -m "Deploy to Cloud Run"
-git push origin main
-```
-
----
-
-### 方法2: Cloud Buildトリガーを使用
-
-GitHubへのプッシュをトリガーにCloud Buildで自動デプロイする方法です。
-
-#### セットアップ
-
-1. **GitHubリポジトリとの接続**
-
-```bash
 # GitHub接続を作成（初回のみ）
 gcloud builds triggers create github \
     --name="deploy-timetable-api" \
-    --repo-name="your-repo-name" \
-    --repo-owner="your-github-username" \
+    --repo-name="$REPO_NAME" \
+    --repo-owner="$REPO_OWNER" \
     --branch-pattern="^main$" \
     --build-config="cloudbuild-github.yaml" \
-    --region="asia-northeast1"
+    --region="$REGION"
 ```
 
-または、[Cloud Console](https://console.cloud.google.com/cloud-build/triggers) からUIで設定：
-1. 「トリガーを接続」をクリック
-2. GitHubを選択し、認証を行う
-3. リポジトリを選択
-4. 設定を完了
+### 方法2: Cloud Consoleから設定（推奨）
 
-2. **cloudbuild-github.yamlの設定**
+1. [Cloud Console](https://console.cloud.google.com/cloud-build/triggers) にアクセス
+2. 「トリガーを接続」をクリック
+3. GitHubを選択し、認証を行う
+4. リポジトリを選択
+5. トリガー設定：
+   - **名前**: `deploy-timetable-api`
+   - **イベント**: プッシュ
+   - **ブランチ**: `^main$`
+   - **設定タイプ**: クラウドビルド設定ファイル（yaml または json）
+   - **場所**: `cloudbuild-github.yaml`
+   - **変数**: 以下の環境変数を設定
+     - `_WLSACCESSID`: Secret Managerから取得するか、直接値を設定
+     - `_WLSSECRET`: Secret Managerから取得するか、直接値を設定
+     - `_LICENSEID`: Secret Managerから取得するか、直接値を設定
 
-`cloudbuild-github.yaml` のsubstitutionsに環境変数を設定するか、Cloud Buildトリガーの設定で環境変数を指定します。
+### cloudbuild-github.yamlの設定確認
 
-#### デプロイの実行
+`cloudbuild-github.yaml` ファイルが正しく設定されているか確認してください。必要に応じて、以下の設定を調整できます：
+
+- `_REGION`: デプロイ先のリージョン（デフォルト: `asia-northeast1`）
+- `_SERVICE_NAME`: Cloud Runサービス名（デフォルト: `timetable-api`）
+- `_MEMORY`: メモリサイズ（デフォルト: `2Gi`）
+- `_CPU`: CPU数（デフォルト: `2`）
+- `_TIMEOUT`: タイムアウト（秒）（デフォルト: `3600`）
+- `_MAX_INSTANCES`: 最大インスタンス数（デフォルト: `10`）
+
+### Secret Managerから環境変数を読み込む場合
+
+`cloudbuild-github.yaml` のsubstitutionsセクションを以下のように更新：
+
+```yaml
+substitutions:
+  _REGION: 'asia-northeast1'
+  _SERVICE_NAME: 'timetable-api'
+  _MEMORY: '2Gi'
+  _CPU: '2'
+  _TIMEOUT: '3600'
+  _MAX_INSTANCES: '10'
+  _WLSACCESSID: '$(gcloud secrets versions access latest --secret=wlsaccessid)'
+  _WLSSECRET: '$(gcloud secrets versions access latest --secret=wlssecret)'
+  _LICENSEID: '$(gcloud secrets versions access latest --secret=licenseid)'
+```
+
+または、Cloud Buildトリガーの設定画面で環境変数を直接指定することも可能です。
+
+## デプロイの実行
 
 GitHubのmainブランチにプッシュすると、自動的にデプロイが開始されます：
 
@@ -172,66 +157,46 @@ git commit -m "Deploy to Cloud Run"
 git push origin main
 ```
 
-#### デプロイの確認
+## デプロイの確認
+
+### Cloud Buildの履歴を確認
 
 ```bash
-# Cloud Buildの履歴を確認
+# 最新5件のビルド履歴を確認
 gcloud builds list --limit=5
 
-# 最新のビルドログを確認
-gcloud builds log $(gcloud builds list --limit=1 --format="value(id)")
+# 最新のビルドIDを取得
+BUILD_ID=$(gcloud builds list --limit=1 --format="value(id)")
 
-# Cloud Runサービスの状態を確認
-gcloud run services describe timetable-api --region asia-northeast1
+# ビルドログを確認
+gcloud builds log $BUILD_ID
 ```
 
----
-
-### 方法3: ソースベースデプロイ（gcloudコマンド）
-
-ローカルからソースコードを直接デプロイする方法です。
-
-#### セットアップ
+### Cloud Runサービスの状態を確認
 
 ```bash
-# プロジェクトIDを設定
-PROJECT_ID="your-project-id"
 SERVICE_NAME="timetable-api"
 REGION="asia-northeast1"
 
-# 環境変数を設定
-export WLSACCESSID="your-wlsaccessid"
-export WLSSECRET="your-wlssecret"
-export LICENSEID="your-licenseid"
+# サービスの詳細を確認
+gcloud run services describe $SERVICE_NAME --region $REGION
+
+# サービスURLを取得
+gcloud run services describe $SERVICE_NAME --region $REGION --format="value(status.url)"
 ```
 
-#### デプロイの実行
+### ヘルスチェック
 
 ```bash
-# デプロイスクリプトを使用
-./deploy-github.sh $PROJECT_ID $SERVICE_NAME $REGION
-
-# または、直接gcloudコマンドを使用
-gcloud run deploy $SERVICE_NAME \
-    --source . \
-    --region $REGION \
-    --platform managed \
-    --allow-unauthenticated \
-    --port 8080 \
-    --memory 2Gi \
-    --cpu 2 \
-    --timeout 3600 \
-    --max-instances 10 \
-    --set-env-vars "WLSACCESSID=$WLSACCESSID,WLSSECRET=$WLSSECRET,LICENSEID=$LICENSEID,CBC_PATH=/usr/bin/cbc"
+SERVICE_URL=$(gcloud run services describe timetable-api --region asia-northeast1 --format="value(status.url)")
+curl $SERVICE_URL/docs
 ```
 
-#### 注意点
+### ログの確認
 
-- ソースベースデプロイは、Cloud Buildを使用して自動的にビルドします
-- ビルド時間は通常5-10分かかります
-- ビルドログはCloud Buildで確認できます
-
----
+```bash
+gcloud run services logs read timetable-api --region asia-northeast1
+```
 
 ## 環境変数の更新
 
@@ -248,18 +213,16 @@ gcloud run services update timetable-api \
 より安全に環境変数を管理するには、Secret Managerを使用します：
 
 ```bash
-# Secretを作成（既に作成済みの場合はスキップ）
-echo -n "your-wlsaccessid" | gcloud secrets create wlsaccessid --data-file=-
-echo -n "your-wlssecret" | gcloud secrets create wlssecret --data-file=-
-echo -n "your-licenseid" | gcloud secrets create licenseid --data-file=-
+# Secretを更新
+echo -n "new-wlsaccessid" | gcloud secrets versions add wlsaccessid --data-file=-
+echo -n "new-wlssecret" | gcloud secrets versions add wlssecret --data-file=-
+echo -n "new-licenseid" | gcloud secrets versions add licenseid --data-file=-
 
 # Cloud RunサービスにSecretをマウント
 gcloud run services update timetable-api \
     --region asia-northeast1 \
     --update-secrets WLSACCESSID=wlsaccessid:latest,WLSSECRET=wlssecret:latest,LICENSEID=licenseid:latest
 ```
-
----
 
 ## リソース設定
 
@@ -280,32 +243,7 @@ gcloud run services update timetable-api \
     --max-instances 20
 ```
 
----
-
-## デプロイの確認
-
-### サービスURLの取得
-
-```bash
-gcloud run services describe timetable-api \
-    --region asia-northeast1 \
-    --format="value(status.url)"
-```
-
-### ヘルスチェック
-
-```bash
-SERVICE_URL=$(gcloud run services describe timetable-api --region asia-northeast1 --format="value(status.url)")
-curl $SERVICE_URL/docs
-```
-
-### ログの確認
-
-```bash
-gcloud run services logs read timetable-api --region asia-northeast1
-```
-
----
+または、`cloudbuild-github.yaml` のsubstitutionsを更新して、次回のデプロイ時に反映させます。
 
 ## トラブルシューティング
 
@@ -342,7 +280,11 @@ gcloud run services logs read timetable-api --region asia-northeast1
 - ビルド時間が長い場合は、Cloud Buildのタイムアウト設定を調整
 - `cloudbuild-github.yaml` の `machineType` を変更: `machineType: 'E2_HIGHCPU_8'`
 
----
+### 7. トリガーが動作しない
+
+- GitHub接続が正しく設定されているか確認
+- ブランチパターンが正しいか確認（`^main$`）
+- トリガーの状態を確認: `gcloud builds triggers list`
 
 ## ローカルでのテスト
 
@@ -363,30 +305,41 @@ docker run -p 8080:8080 \
 # ブラウザで http://localhost:8080/docs にアクセス
 ```
 
----
-
 ## 更新デプロイ
 
-コードを更新した後、再度デプロイ：
+コードを更新した後、mainブランチにプッシュするだけで自動的にデプロイが開始されます：
 
-### GitHub Actionsの場合
-mainブランチにプッシュするだけで自動デプロイされます。
-
-### Cloud Buildトリガーの場合
-mainブランチにプッシュするだけで自動デプロイされます。
-
-### ソースベースデプロイの場合
 ```bash
-./deploy-github.sh $PROJECT_ID $SERVICE_NAME $REGION
+git add .
+git commit -m "Update application"
+git push origin main
 ```
 
----
+## トリガーの管理
+
+### トリガー一覧の確認
+
+```bash
+gcloud builds triggers list
+```
+
+### トリガーの削除
+
+```bash
+gcloud builds triggers delete TRIGGER_ID
+```
+
+### トリガーの更新
+
+```bash
+gcloud builds triggers update TRIGGER_ID \
+    --branch-pattern="^main$|^develop$"
+```
 
 ## 参考リンク
 
 - [Cloud Run ドキュメント](https://cloud.google.com/run/docs)
 - [Cloud Build ドキュメント](https://cloud.google.com/build/docs)
-- [Cloud Run ソースベースデプロイ](https://cloud.google.com/run/docs/deploying/source-code)
-- [GitHub Actions for Google Cloud](https://github.com/google-github-actions)
+- [Cloud Build トリガー](https://cloud.google.com/build/docs/triggers)
 - [Gurobi ドキュメント](https://www.gurobi.com/documentation/)
 - [CBC ソルバー](https://github.com/coin-or/Cbc)

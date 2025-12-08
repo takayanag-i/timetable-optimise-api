@@ -21,18 +21,17 @@ docker-compose exec fastapi sh -c "cd /workspaces/timetable/fastapi && PYTHONPAT
 
 ## Cloud Runへのデプロイ
 
-GitHubから直接Cloud Runにデプロイします。詳細は [DEPLOY.md](./DEPLOY.md) を参照してください。
+GitHubからCloud Buildトリガーを使用してCloud Runにデプロイします。詳細は [DEPLOY.md](./DEPLOY.md) を参照してください。
 
 ### クイックスタート
 
-1. **GitHub Actionsを使用（推奨）**
-   - `.github/workflows/deploy-cloud-run.yml` が設定済み
-   - GitHub Secretsに必要な環境変数を設定
-   - mainブランチにプッシュすると自動デプロイ
+1. **Cloud Buildトリガーの設定**
+   - [Cloud Console](https://console.cloud.google.com/cloud-build/triggers) からGitHubリポジトリを接続
+   - `cloudbuild-github.yaml` をビルド設定として指定
+   - 環境変数を設定（Secret Managerまたは直接指定）
 
-2. **Cloud Buildトリガーを使用**
-   - `cloudbuild-github.yaml` を使用してCloud Buildトリガーを設定
-   - GitHubへのプッシュで自動デプロイ
-
-3. **ソースベースデプロイ**
-   - `./deploy-github.sh` を実行してローカルからデプロイ
+2. **デプロイの実行**
+   - mainブランチにプッシュすると自動的にデプロイが開始されます
+   ```bash
+   git push origin main
+   ```
