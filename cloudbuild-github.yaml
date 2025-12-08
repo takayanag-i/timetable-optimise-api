@@ -1,0 +1,64 @@
+# Cloud Build設定ファイル（GitHub直接デプロイ用）
+# GitHubのCloud Buildトリガーで使用
+
+steps:
+  # Dockerイメージのビルド（Artifact Registryを使用しない）
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:${SHORT_SHA}'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:latest'
+      - '.'
+    id: 'build-image'
+
+  # Cloud Runへの直接デプロイ（イメージを一時的に保存）
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image'
+      - 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+      - '--memory'
+      - '${_MEMORY}'
+      - '--cpu'
+      - '${_CPU}'
+      - '--timeout'
+      - '${_TIMEOUT}'
+      - '--max-instances'
+      - '${_MAX_INSTANCES}'
+      - '--set-env-vars'
+      - 'WLSACCESSID=${_WLSACCESSID},WLSSECRET=${_WLSSECRET},LICENSEID=${_LICENSEID},CBC_PATH=/usr/bin/cbc'
+    id: 'deploy-cloud-run'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+  # ビルドキャッシュを有効化（デプロイ速度向上）
+  substitution_option: 'ALLOW_LOOSE'
+
+substitutions:
+  _REGION: 'asia-northeast1'
+  _SERVICE_NAME: 'timetable-api'
+  _MEMORY: '2Gi'
+  _CPU: '2'
+  _TIMEOUT: '3600'
+  _MAX_INSTANCES: '10'
+  _WLSACCESSID: ''
+  _WLSSECRET: ''
+  _LICENSEID: ''
+
+# 一時的なイメージ保存（Container Registryを使用、無料枠あり）
+images:
+  - 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:${SHORT_SHA}'
+  - 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:latest'
