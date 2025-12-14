@@ -1,4 +1,3 @@
-import json
 import logging
 
 from fastapi import APIRouter, Path, Body
@@ -76,8 +75,10 @@ def optimise_annual_timetable(
     すべてのハード制約は満たされ、ソフト制約は可能な限り満たされます。
     """
     # リクエストをログ出力
-    logger.info("POST /optimise-annual-timetable - Request received")
-    logger.info(f"Request body:\n{json.dumps(input_data.model_dump(), indent=2, ensure_ascii=False, default=str)}")
+    logger.info(
+        "POST /optimise-annual-timetable - Request received",
+        extra={"request_body": input_data.model_dump()}
+    )
     
     result = OptimiseAnnualTimetableUsecase(input_data).execute()
     return result
