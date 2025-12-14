@@ -1,9 +1,13 @@
+import json
+import logging
+
 from fastapi import APIRouter, Path, Body
 
 from application.usecases.get_annual_data_usecase import AnnualDataService
 from application.usecases.optimise_annual_timetable_usecase import OptimiseAnnualTimetableUsecase
 from application.models.dto import OptimiseAnnualTimetableDto, AnnualTimetableResultDto
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -71,5 +75,9 @@ def optimise_annual_timetable(
     このエンドポイントは、与えられた制約の下で最適な時間割を生成します。
     すべてのハード制約は満たされ、ソフト制約は可能な限り満たされます。
     """
+    # リクエストをログ出力
+    logger.info("POST /optimise-annual-timetable - Request received")
+    logger.info(f"Request body:\n{json.dumps(input_data.model_dump(), indent=2, ensure_ascii=False, default=str)}")
+    
     result = OptimiseAnnualTimetableUsecase(input_data).execute()
     return result
