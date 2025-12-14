@@ -7,7 +7,9 @@ class InstructorConstraint(ConstraintApplierBase):
 
     def apply(self, model: AnnualLpModel) -> AnnualLpModel:
         def is_available(d, p, i) -> bool:
-            return p not in model.data.attendance_day_dict[i][d]
+            instructor_days = model.data.attendance_day_dict.get(i, {})
+            unavailable_periods = instructor_days.get(d, [])
+            return p not in unavailable_periods
 
         constraints = [
             (model.y[d, p, i] <= 1) if is_available(d, p, i)
