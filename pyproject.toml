@@ -12,6 +12,7 @@ dependencies = [
     "pulp~=3.0.2",
     "python-dotenv~=1.1.0",
     "gurobipy>=12.0.3",
+    "python-json-logger~=3.2.1",
 ]
 
 [dependency-groups]

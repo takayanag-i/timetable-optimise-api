@@ -2,11 +2,29 @@ from interface.routers.rest import router as rest_router
 import uvicorn
 import logging
 from fastapi import FastAPI
+from pythonjsonlogger import jsonlogger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+
+def setup_logging():
+    """JSON形式の構造化ログを設定"""
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    # 既存のハンドラーをクリア
+    logger.handlers.clear()
+
+    # JSON形式のフォーマッター
+    handler = logging.StreamHandler()
+    formatter = jsonlogger.JsonFormatter(
+        fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+        rename_fields={"asctime": "timestamp", "levelname": "level"},
+        datefmt="%Y-%m-%dT%H:%M:%S%z"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+
+setup_logging()
 
 app = FastAPI(
     title="時間割最適化API",
