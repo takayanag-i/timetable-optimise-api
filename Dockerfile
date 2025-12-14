@@ -31,7 +31,7 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GUROBI_HOME/lib
 ENV CBC_PATH=/usr/bin/cbc
 
 # プロジェクトファイルのコピー
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 
 # 依存関係のインストール
 RUN uv sync --frozen --no-dev
